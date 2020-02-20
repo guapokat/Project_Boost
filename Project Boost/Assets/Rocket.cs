@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class Rocket : MonoBehaviour {
 
@@ -11,6 +9,9 @@ public class Rocket : MonoBehaviour {
     Rigidbody rigidBody;
     AudioSource audioSource;
 
+    enum State { Alive, Dying, Transcending };
+    State state = State.Alive;
+
     // Start is called before the first frame update
     void Start() {
         rigidBody = GetComponent<Rigidbody>();
@@ -19,8 +20,42 @@ public class Rocket : MonoBehaviour {
 
     // Update is called once per frame
     void Update() {
-        Thrust();
-        Rotate();
+        // todo somewhere stop sound on death
+        if(state == State.Alive) {
+            Thrust();
+            Rotate();
+        }
+    }
+
+    // Detects if Rocket Ship has collided with an object
+    private void OnCollisionEnter(Collision collision) {
+
+        // Ignore collisions when dead
+        if(state != State.Alive) { return ; }
+
+        switch(collision.gameObject.tag) {
+            case "Friendly":
+                // Do nothing
+                break;
+            case "Finish":
+                state = State.Transcending;
+                Invoke("LoadNextScene", 1f); // parameterise time
+                break;
+            default:
+                // Kill player
+                state = State.Dying;
+                Invoke("RestartGame", 1f);
+                break;
+        }
+    }
+
+    private void RestartGame() {
+        SceneManager.LoadScene(0);
+    }
+
+    private void LoadNextScene() {
+        // todo allow for more than 2 levels
+        SceneManager.LoadScene(1);
     }
 
     private void Thrust() {
