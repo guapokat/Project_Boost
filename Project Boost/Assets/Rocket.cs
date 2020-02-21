@@ -5,6 +5,9 @@ public class Rocket : MonoBehaviour {
 
     [SerializeField] float rcsThrust = 100f;
     [SerializeField] float mainThrust = 100f;
+    [SerializeField] AudioClip mainEngine;
+    [SerializeField] AudioClip deathSound;
+    [SerializeField] AudioClip levelLoadSound;
 
     Rigidbody rigidBody;
     AudioSource audioSource;
@@ -22,7 +25,7 @@ public class Rocket : MonoBehaviour {
     void Update() {
         // todo somewhere stop sound on death
         if(state == State.Alive) {
-            Thrust();
+            RespondToThrustInput();
             Rotate();
         }
     }
@@ -38,15 +41,27 @@ public class Rocket : MonoBehaviour {
                 // Do nothing
                 break;
             case "Finish":
-                state = State.Transcending;
-                Invoke("LoadNextScene", 1f); // parameterise time
+                StartSuccessSequence();
                 break;
             default:
-                // Kill player
-                state = State.Dying;
-                Invoke("RestartGame", 1f);
+                StartDeathSequence();
                 break;
         }
+    }
+
+    private void StartSuccessSequence() {
+        state = State.Transcending;
+        audioSource.Stop();
+        audioSource.PlayOneShot(levelLoadSound);
+        Invoke("LoadNextScene", 1f); // parameterise time
+    }
+
+    private void StartDeathSequence() {
+        // Kill player
+        state = State.Dying;
+        audioSource.Stop();
+        audioSource.PlayOneShot(deathSound);
+        Invoke("RestartGame", 1f);
     }
 
     private void RestartGame() {
@@ -58,16 +73,20 @@ public class Rocket : MonoBehaviour {
         SceneManager.LoadScene(1);
     }
 
-    private void Thrust() {
+    private void RespondToThrustInput() {
         // Can thrust while rotating
         if (Input.GetKey(KeyCode.Space)) {
-            rigidBody.AddRelativeForce(Vector3.up * mainThrust);
-            // So the audio doesn't layer
-            if (!audioSource.isPlaying) {
-                audioSource.Play();
-            }
+            ApplyThrust();
         } else {
             audioSource.Stop();
+        }
+    }
+
+    private void ApplyThrust() {
+        rigidBody.AddRelativeForce(Vector3.up * mainThrust);
+        // So the audio doesn't layer
+        if (!audioSource.isPlaying) {
+            audioSource.PlayOneShot(mainEngine);
         }
     }
 
